@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rock Paper Scissors</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+
+        #game-container {
+            margin-top: 20px;
+        }
+
+        #webcam-container {
+            margin: 10px auto;
+        }
+
+        .info-box {
+            margin: 10px;
+            font-size: 18px;
+        }
+
+        #score {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Rock Paper Scissors</h1>
+
+    <button onclick="init()">Start Game</button>
+
+    <div id="game-container">
+        <div id="webcam-container"></div>
+        <div id="label-container"></div>
+
+        <div class="info-box">Your Choice: <span id="player-choice">---</span></div>
+        <div class="info-box">Computer Choice: <span id="computer-choice">---</span></div>
+        <div class="info-box">Winner: <span id="winner">---</span></div>
+
+        <div id="score">
+            Player: <span id="player-score">0</span> |
+            Computer: <span id="computer-score">0</span>
+        </div>
+    </div>
+
+    <!-- TensorFlow & Teachable Machine -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+    <script>
+        const URL = "./my_model/"; // Folder containing model.json and metadata.json
+
+        let model, webcam, labelContainer, maxPredictions;
+        let playerScore = 0;
+        let computerScore = 0;
+        let lastPlayerChoice = "";
+
+        const choices = ["Rock", "Paper", "Scissors"];
+
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+
+            webcam = new tmImage.Webcam(200, 200, true);
+            await webcam.setup();
+            await webcam.play();
+            window.requestAnimationFrame(loop);
+
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+
+            labelContainer = document.getElementById("label-container");
+            labelContainer.innerHTML = "";
+            for (let i = 0; i < maxPredictions; i++) {
+                labelContainer.appendChild(document.createElement("div"));
+            }
+        }
+
+        async function loop() {
+            webcam.update();
+            await predict();
+            window.requestAnimationFrame(loop);
+        }
+
+        async function predict() {
+            const prediction = await model.predict(webcam.canvas);
+
+            let highestPrediction = prediction[0];
+            for (let i = 1; i < prediction.length; i++) {
+                if (prediction[i].probability > highestPrediction.probability) {
+                    highestPrediction = prediction[i];
+                }
+            }
+
+            // Display probabilities
+            for (let i = 0; i < maxPredictions; i++) {
+                labelContainer.childNodes[i].innerHTML =
+                    prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+            }
+
+            // Only trigger a round if confidence is high enough
+            if (highestPrediction.probability > 0.9) {
+                const playerChoice = highestPrediction.className;
+
+                if (playerChoice !== lastPlayerChoice) {
+                    lastPlayerChoice = playerChoice;
+                    playRound(playerChoice);
+                }
+            }
+        }
+
+        function playRound(playerChoice) {
+            const computerChoice = choices[Math.floor(Math.random() * 3)];
+
+            document.getElementById("player-choice").textContent = playerChoice;
+            document.getElementById("computer-choice").textContent = computerChoice;
+
+            let result = "";
+
+            if (playerChoice === computerChoice) {
+                result = "Tie!";
+            } else if (
+                (playerChoice === "Rock" && computerChoice === "Scissors") ||
+                (playerChoice === "Paper" && computerChoice === "Rock") ||
+                (playerChoice === "Scissors" && computerChoice === "Paper")
+            ) {
+                result = "You Win!";
+                playerScore++;
+            } else {
+                result = "Computer Wins!";
+                computerScore++;
+            }
+
+            document.getElementById("winner").textContent = result;
+            document.getElementById("player-score").textContent = playerScore;
+            document.getElementById("computer-score").textContent = computerScore;
+        }
+    </script>
+
+</body>
+</html>
