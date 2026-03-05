@@ -34,7 +34,7 @@
 
 <h1>Rock Paper Scissors</h1>
 
-<!-- ===== TOP AREA ===== -->
+<!-- ===== TOP AREA: Start Button + Webcam ===== -->
 <div id="top">
     <div>Teachable Machine Image Model</div>
     <button type="button" onclick="init()">Start</button>
@@ -58,18 +58,15 @@
     <span id="computerScore">0</span> Computer
 </p>
 
-<!-- ===== SCRIPTS ===== -->
+<!-- ===== TEACHABLE MACHINE SCRIPTS ===== -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
 <script type="text/javascript">
+    // ========== YOUR SNIPPET ==========
     const URL = "./my_model/";
 
     let model, webcam, labelContainer, maxPredictions;
-
-    let currentPrediction = "";
-    let playerScore = 0;
-    let computerScore = 0;
 
     async function init() {
         const modelURL = URL + "model.json";
@@ -84,12 +81,9 @@
         await webcam.play();
         window.requestAnimationFrame(loop);
 
-        document.getElementById("webcam-container").innerHTML = "";
         document.getElementById("webcam-container").appendChild(webcam.canvas);
-
         labelContainer = document.getElementById("label-container");
         labelContainer.innerHTML = "";
-
         for (let i = 0; i < maxPredictions; i++) {
             labelContainer.appendChild(document.createElement("div"));
         }
@@ -103,23 +97,24 @@
 
     async function predict() {
         const prediction = await model.predict(webcam.canvas);
-
         let bestProb = 0;
         let bestClass = "";
-
         for (let i = 0; i < maxPredictions; i++) {
-            labelContainer.childNodes[i].innerHTML =
-                prediction[i].className + ": " +
-                prediction[i].probability.toFixed(2);
+            const classPrediction = prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+            labelContainer.childNodes[i].innerHTML = classPrediction;
 
             if (prediction[i].probability > bestProb) {
                 bestProb = prediction[i].probability;
                 bestClass = prediction[i].className;
             }
         }
-
-        currentPrediction = bestClass;
+        currentPrediction = bestClass; // store the highest-confidence prediction
     }
+
+    // ========== GAME LOGIC ==========
+    let currentPrediction = "";
+    let playerScore = 0;
+    let computerScore = 0;
 
     function startRound() {
         let time = 3;
@@ -153,8 +148,8 @@
     }
 
     function randomChoice() {
-        return ["Rock", "Paper", "Scissors"]
-            [Math.floor(Math.random() * 3)];
+        const choices = ["Rock", "Paper", "Scissors"];
+        return choices[Math.floor(Math.random() * 3)];
     }
 
     function getWinner(player, computer) {
