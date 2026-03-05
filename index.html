@@ -3,155 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <title>Rock Paper Scissors</title>
-
     <style>
         body {
             font-family: Arial, sans-serif;
+            background: #f2f2f2;
             text-align: center;
-            background-color: #f4f4f4;
         }
-
-        #game-container {
-            margin-top: 20px;
+        #top {
+            margin-top: 15px;
         }
-
         #webcam-container {
             margin: 10px auto;
+            width: 220px;
         }
-
-        .info-box {
-            margin: 10px;
-            font-size: 18px;
-        }
-
-        #score {
-            font-size: 20px;
+        #countdown {
+            font-size: 32px;
             font-weight: bold;
+            color: red;
+            margin: 10px;
         }
-
         button {
             padding: 10px 20px;
             font-size: 16px;
-            cursor: pointer;
+            margin: 5px;
         }
     </style>
 </head>
 
 <body>
 
-    <h1>Rock Paper Scissors</h1>
+<h1>Rock Paper Scissors</h1>
 
-    <button onclick="init()">Start Game</button>
+<!-- ===== TOP AREA ===== -->
+<div id="top">
+    <div>Teachable Machine Image Model</div>
+    <button type="button" onclick="init()">Start</button>
+    <div id="webcam-container"></div>
+</div>
 
-    <div id="game-container">
-        <div id="webcam-container"></div>
-        <div id="label-container"></div>
+<div id="label-container"></div>
 
-        <div class="info-box">Your Choice: <span id="player-choice">---</span></div>
-        <div class="info-box">Computer Choice: <span id="computer-choice">---</span></div>
-        <div class="info-box">Winner: <span id="winner">---</span></div>
+<hr>
 
-        <div id="score">
-            Player: <span id="player-score">0</span> |
-            Computer: <span id="computer-score">0</span>
-        </div>
-    </div>
+<!-- ===== GAME CONTROLS ===== -->
+<button onclick="startRound()">Confirm Move</button>
+<div id="countdown">Ready</div>
 
-    <!-- TensorFlow & Teachable Machine -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<p><strong>Your Choice:</strong> <span id="playerChoice">-</span></p>
+<p><strong>Computer Choice:</strong> <span id="computerChoice">-</span></p>
+<p><strong>Round Result:</strong> <span id="winner">-</span></p>
 
-    <script>
-        const URL = "./my_model/"; // Folder containing model.json and metadata.json
+<p><strong>Score:</strong>
+    You <span id="playerScore">0</span> :
+    <span id="computerScore">0</span> Computer
+</p>
 
-        let model, webcam, labelContainer, maxPredictions;
-        let playerScore = 0;
-        let computerScore = 0;
-        let lastPlayerChoice = "";
+<!-- ===== SCRIPTS ===== -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
-        const choices = ["Rock", "Paper", "Scissors"];
+<script type="text/javascript">
+    const URL = "./my_model/";
 
-        async function init() {
-            const modelURL = URL + "model.json";
-            const metadataURL = URL + "metadata.json";
+    let model, webcam, labelContainer, maxPredictions;
 
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
+    let currentPrediction = "";
+    let playerScore = 0;
+    let computerScore = 0;
 
-            webcam = new tmImage.Webcam(200, 200, true);
-            await webcam.setup();
-            await webcam.play();
-            window.requestAnimationFrame(loop);
+    async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
 
-            document.getElementById("webcam-container").appendChild(webcam.canvas);
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
 
-            labelContainer = document.getElementById("label-container");
-            labelContainer.innerHTML = "";
-            for (let i = 0; i < maxPredictions; i++) {
-                labelContainer.appendChild(document.createElement("div"));
+        const flip = true;
+        webcam = new tmImage.Webcam(200, 200, flip);
+        await webcam.setup();
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        document.getElementById("webcam-container").innerHTML = "";
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+
+        labelContainer = document.getElementById("label-container");
+        labelContainer.innerHTML = "";
+
+        for (let i = 0; i < maxPredictions; i++) {
+            labelContainer.appendChild(document.createElement("div"));
+        }
+    }
+
+    async function loop() {
+        webcam.update();
+        await predict();
+        window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+        const prediction = await model.predict(webcam.canvas);
+
+        let bestProb = 0;
+        let bestClass = "";
+
+        for (let i = 0; i < maxPredictions; i++) {
+            labelContainer.childNodes[i].innerHTML =
+                prediction[i].className + ": " +
+                prediction[i].probability.toFixed(2);
+
+            if (prediction[i].probability > bestProb) {
+                bestProb = prediction[i].probability;
+                bestClass = prediction[i].className;
             }
         }
 
-        async function loop() {
-            webcam.update();
-            await predict();
-            window.requestAnimationFrame(loop);
+        currentPrediction = bestClass;
+    }
+
+    function startRound() {
+        let time = 3;
+        document.getElementById("countdown").innerText = time;
+
+        const timer = setInterval(() => {
+            time--;
+            document.getElementById("countdown").innerText = time;
+
+            if (time === 0) {
+                clearInterval(timer);
+                playRound();
+            }
+        }, 1000);
+    }
+
+    function playRound() {
+        const player = currentPrediction;
+        const computer = randomChoice();
+
+        document.getElementById("playerChoice").innerText = player;
+        document.getElementById("computerChoice").innerText = computer;
+
+        const result = getWinner(player, computer);
+        document.getElementById("winner").innerText = result;
+
+        document.getElementById("playerScore").innerText = playerScore;
+        document.getElementById("computerScore").innerText = computerScore;
+
+        document.getElementById("countdown").innerText = "Ready";
+    }
+
+    function randomChoice() {
+        return ["Rock", "Paper", "Scissors"]
+            [Math.floor(Math.random() * 3)];
+    }
+
+    function getWinner(player, computer) {
+        if (player === computer) return "Tie";
+
+        if (
+            (player === "Rock" && computer === "Scissors") ||
+            (player === "Paper" && computer === "Rock") ||
+            (player === "Scissors" && computer === "Paper")
+        ) {
+            playerScore++;
+            return "You Win";
+        } else {
+            computerScore++;
+            return "Computer Wins";
         }
-
-        async function predict() {
-            const prediction = await model.predict(webcam.canvas);
-
-            let highestPrediction = prediction[0];
-            for (let i = 1; i < prediction.length; i++) {
-                if (prediction[i].probability > highestPrediction.probability) {
-                    highestPrediction = prediction[i];
-                }
-            }
-
-            // Display probabilities
-            for (let i = 0; i < maxPredictions; i++) {
-                labelContainer.childNodes[i].innerHTML =
-                    prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-            }
-
-            // Only trigger a round if confidence is high enough
-            if (highestPrediction.probability > 0.9) {
-                const playerChoice = highestPrediction.className;
-
-                if (playerChoice !== lastPlayerChoice) {
-                    lastPlayerChoice = playerChoice;
-                    playRound(playerChoice);
-                }
-            }
-        }
-
-        function playRound(playerChoice) {
-            const computerChoice = choices[Math.floor(Math.random() * 3)];
-
-            document.getElementById("player-choice").textContent = playerChoice;
-            document.getElementById("computer-choice").textContent = computerChoice;
-
-            let result = "";
-
-            if (playerChoice === computerChoice) {
-                result = "Tie!";
-            } else if (
-                (playerChoice === "Rock" && computerChoice === "Scissors") ||
-                (playerChoice === "Paper" && computerChoice === "Rock") ||
-                (playerChoice === "Scissors" && computerChoice === "Paper")
-            ) {
-                result = "You Win!";
-                playerScore++;
-            } else {
-                result = "Computer Wins!";
-                computerScore++;
-            }
-
-            document.getElementById("winner").textContent = result;
-            document.getElementById("player-score").textContent = playerScore;
-            document.getElementById("computer-score").textContent = computerScore;
-        }
-    </script>
+    }
+</script>
 
 </body>
 </html>
