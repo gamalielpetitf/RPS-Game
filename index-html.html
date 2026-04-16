@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rock Paper Scissors</title>
+
+    
+    <link rel="stylesheet" href="style.css">
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+</head>
+
+<body>
+
+<h1>Rock Paper Scissors</h1>
+
+
+<div id="top">
+    <div>Record Your Move</div>
+    <button onclick="init()">Start</button>
+    <div id="webcam-container"></div>
+</div>
+
+<div id="label-container"></div>
+
+<hr>
+
+
+<button onclick="startRound()">Confirm Move</button>
+<div id="countdown">Ready</div>
+
+<p><strong>Your Choice:</strong> <span id="playerChoice">-</span></p>
+<p><strong>Computer Choice:</strong> <span id="computerChoice">-</span></p>
+<p><strong>Round Result:</strong> <span id="winner">-</span></p>
+
+<p><strong>Score:</strong>
+    You <span id="playerScore">0</span> :
+    <span id="computerScore">0</span> Computer
+</p>
+
+
+<script src="script.js"></script>
+
+</body>
+</html>

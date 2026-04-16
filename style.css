@@ -1,0 +1,38 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #000;        
+    color: #fff;             
+    text-align: center;
+}
+
+#top {
+    margin-top: 15px;
+}
+
+#webcam-container {
+    margin: 10px auto;
+    width: 220px;
+}
+
+#countdown {
+    font-size: 32px;
+    font-weight: bold;
+    color: red;
+    margin: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    margin: 5px;
+    cursor: pointer;
+
+    background-color: whitesmoke;   
+    color: black;            
+    border: none;
+    border-radius: 5px;
+}
+
+button:hover {
+    opacity: 0.8;           
+}
